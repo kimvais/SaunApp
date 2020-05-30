@@ -8,63 +8,10 @@ open Fabulous.XamarinForms
 open Fabulous.XamarinForms.LiveUpdate
 open Xamarin.Forms
 
-open FSharp.Data
 
-module Colors =
-    let Primary = Color.FromHex("#8bc34a")
-    let PrimaryL = Color.FromHex("#bef67a")
-    let PrimaryD = Color.FromHex("#5a9216")
-    let Secondary = Color.FromHex("#ffc400")
-    let SecondaryL = Color.FromHex("#fff64f")
-    let SecodaryD = Color.FromHex("#c79400")
-    let Text = Color.Black
-    let Error = Color.FromHex("#B00020")
-
-module Design =
-    let materialFont =
-        (match Device.RuntimePlatform with
-         | Device.iOS -> "Material Design Icons"
-         | Device.Android -> "materialdesignicons_webfont.ttf#Material Design Icons"
-         | Device.UWP -> "materialdesignicons-webfont.ttf#Material Design Icons"
-         | _ -> null)
-
-    let materialButton materialIcon backgroundColor textColor command =
-        View.Button
-            (text = materialIcon, command = command, fontFamily = materialFont, fontSize = FontSize(20.),
-             backgroundColor = backgroundColor, textColor = textColor, cornerRadius = 10, borderColor = backgroundColor)
-
-
-
-module Icon =
-    let Refresh = "\U000F0450"
-
-module API =
-    let URL = "https://thermo.77.fi"
-
-    type Temperature = JsonProvider<"""
-    {
-      "sensor_id": "0123456789abcdef",
-      "temperature": 0.1,
-      "node_id": "00:00:00",
-      "timestamp": "2020-05-29T19:12:24"
-    }
-    """>
-
-    type Sensors = JsonProvider<"""
-    ["abc","def"]
-    """>
-
-    let get_sensors =
-        Sensors.Load(URL + "/sensors")
-
-    let get_temp sensor_id =
-        Temperature.Load(URL + "/temperature/" + sensor_id)
-
-    let print_temp_with_ts (temp: Temperature.Root) =
-        let ts = temp.Timestamp
-        printfn "%s %f" (ts.ToString("yyyy-MM-dd HH:mm")) temp.Temperature
-
-    let get_temps = Array.map get_temp
+open SaunApp.Api
+open SaunApp.Utils
+open SaunApp.Style
 
 module App =
     type Model =
@@ -105,11 +52,7 @@ module App =
     let update msg model =
         match msg with
         | GetTemps ->
-            { model with
-                  Temperatures =
-                      model.Sensors
-                      |> API.get_temps
-                       }, []
+            { model with Temperatures = model.Sensors |> API.get_temps }, []
         | Reset -> init ()
 
     let view (model: Model) dispatch =
@@ -123,6 +66,9 @@ module App =
 
                               children =
                                   [ for t in model.Temperatures do
+                                      yield View.Label
+                                                (text = humandate t.Timestamp, fontFamily = "Trebuchet",
+                                                 textColor = Colors.PrimaryD)
                                       yield View.Label
                                                 (text = sprintf "%+0.1f °C" (t.Temperature), fontSize = FontSize(32.0),
                                                  fontFamily = "Trebuchet") ]
