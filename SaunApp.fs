@@ -1,6 +1,7 @@
 ﻿// Copyright 2018-2019 Fabulous contributors. See LICENSE.md for license.
 namespace SaunApp
 
+open System
 open System.Diagnostics
 open Fabulous
 open Fabulous.XamarinForms
@@ -9,6 +10,40 @@ open Xamarin.Forms
 
 open FSharp.Data
 
+module Colors =
+    let Primary = Color.FromHex("#8bc34a")
+    let PrimaryL = Color.FromHex("#bef67a")
+    let PrimaryD = Color.FromHex("#5a9216")
+    let Secondary = Color.FromHex("#ffc400")
+    let SecondaryL = Color.FromHex("#fff64f")
+    let SecodaryD = Color.FromHex("#c79400")
+    let Text = Color.Black
+    let Error = Color.FromHex("#B00020")
+    
+module Design =
+    let materialFont =
+        (match Device.RuntimePlatform with
+                                 | Device.iOS -> "Material Design Icons"
+                                 | Device.Android -> "materialdesignicons_webfont.ttf#Material Design Icons"
+                                 | Device.WPF -> "materialdesignicons-webfont.ttf#Material Design Icons"
+                                 | _ -> null)
+    
+    let materialButton materialIcon backgroundColor textColor command =
+        View.Button(text = materialIcon,
+            command = command,
+            fontFamily = materialFont,
+            fontSize = FontSize(20.),
+            backgroundColor = backgroundColor,
+            textColor = textColor,
+            cornerRadius = 10,
+            borderColor = backgroundColor
+            )
+        
+        
+        
+module Icon =
+    let Refresh = "\U000F0450"
+    
 module API =
     let URL = "https://thermo.77.fi"
 
@@ -44,52 +79,64 @@ module App =
         TimerOn: bool }
 
     type Msg = 
-        | TimedTick
         | GetTemps
         | Reset
 
     let initModel = { Temperatures=Array.zeroCreate 0; TimerOn=false; Sensors = API.get_sensors }
 
-    let init () = initModel, Cmd.none
 
-    let timerCmd =
-        async { do! Async.Sleep 200
-                return TimedTick }
+    let periodicPoll() =
+        async {
+                Console.WriteLine "Sleeping"
+                do! Async.Sleep 20000
+                Console.WriteLine "Getting temperatures..."
+                return GetTemps }
         |> Cmd.ofAsyncMsg
 
+    let getTemps() =
+        GetTemps |> Cmd.ofMsg
+        
+    type CmdMsg =
+        | PeriodicPoll
+        | GetTempsCmd
+        
+    let mapCmdMsgToCmd cmdMsg =
+        match cmdMsg with
+        | PeriodicPoll -> periodicPoll()
+        | GetTempsCmd -> getTemps()
+        
+    let init () = initModel, [GetTempsCmd; PeriodicPoll]
+    
     let update msg model =
         match msg with
-        | TimedTick -> 
-            if model.TimerOn then
-                model, Cmd.none
-            else 
-                model, Cmd.none
         | GetTemps -> 
-                { model with Temperatures = model.Sensors |> API.get_temps |> Array.map (fun t -> t.Temperature) }, timerCmd
+                { model with Temperatures = model.Sensors |> API.get_temps |> Array.map (fun t -> t.Temperature) }, []
         | Reset -> init()
 
     let view (model: Model) dispatch =
-        View.ContentPage(
-          content = View.StackLayout(padding = Thickness 20.0, verticalOptions = LayoutOptions.Center,
-            children = [
-                View.ListView( items= [
-                                              for t in model.Temperatures do
-                                              yield View.TextCell(sprintf "%+0.1f °C" t) ]
-                             )
-                View.Button(text="Update", command= (fun () -> dispatch GetTemps))
-            ]))
+        View.NavigationPage(
+            pages=[
+            View.ContentPage( title = "SaunaApp",
+              content = View.StackLayout(padding = Thickness 20.0, verticalOptions = LayoutOptions.StartAndExpand,
+                                         
+                children = [ for t in model.Temperatures do
+                              yield View.Label(text = sprintf "%+0.1f °C" t, fontSize=FontSize(32.0), fontFamily="Trebuchet")
+                           ] @ [
+                    Design.materialButton Icon.Refresh Colors.Secondary Colors.Text (fun () -> dispatch GetTemps)
+                    ]))],
+            barBackgroundColor = Colors.Primary,
+            barTextColor = Colors.Text
+        )
 
     // Note, this declaration is needed if you enable LiveUpdate
-    let program = XamarinFormsProgram.mkProgram init update view
+    let program = Program.mkProgramWithCmdMsg init update view mapCmdMsgToCmd
 
 type App () as app = 
     inherit Application ()
 
     let runner = 
         App.program
-#if DEBUG
         |> Program.withConsoleTrace
-#endif
         |> XamarinFormsProgram.run app
 
 #if DEBUG
