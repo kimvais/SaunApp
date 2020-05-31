@@ -60,6 +60,13 @@ module App =
                       |> API.get_temps }, []
         | Reset -> init ()
 
+    let timestamp_text (t: API.Temperature.Root) = humandate t.Timestamp
+    let temperature_text (t: API.Temperature.Root) = sprintf "%+0.1f °C" t.Temperature
+    let sensorname_text (model: Model) (t: API.Temperature.Root) =
+        match model.Sensors.TryFind t.SensorId with
+        | Some name -> sprintf "%s (%s)" name (timestamp_text t)
+        | None -> sprintf "Unnamed sensor %s (%s)" t.SensorId (timestamp_text t)
+    
     let view (model: Model) dispatch =
         View.NavigationPage
             (pages =
@@ -72,10 +79,10 @@ module App =
                               children =
                                   [ for t in model.Temperatures do
                                       yield View.Label
-                                                (text = humandate t.Timestamp, fontFamily = "Trebuchet",
+                                                (text = sensorname_text model t, fontFamily = "Trebuchet",
                                                  textColor = Colors.PrimaryD)
                                       yield View.Label
-                                                (text = sprintf "%+0.1f °C" (t.Temperature), fontSize = FontSize(32.0),
+                                                (text = temperature_text t, fontSize = FontSize(32.0),
                                                  fontFamily = "Trebuchet") ]
                                   @ [ Design.materialButton Icon.Refresh Colors.Secondary Colors.Text
                                           (fun () -> dispatch GetTemps) ])) ], barBackgroundColor = Colors.Primary,
