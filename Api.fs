@@ -3,7 +3,8 @@
 open FSharp.Data
 
 module API =
-    let URL = "https://thermo.77.fi"
+    // let URL = "https://thermo.77.fi"
+    let URL = "http://127.0.0.1:8000"
 
     type Temperature = JsonProvider<"""
     {
@@ -15,11 +16,11 @@ module API =
     """>
 
     type Sensors = JsonProvider<"""
-    ["abc","def"]
+    [{"sensor_id": "01234567890abcdef", "name": "Sensor name"}]
     """>
 
     let get_sensors =
-        Sensors.Load(URL + "/sensors")
+        Sensors.Load(URL + "/sensors") |> Array.map (fun s -> (s.SensorId, s.Name)) |> Map.ofArray
 
     let get_temp sensor_id =
         Temperature.Load(URL + "/temperature/" + sensor_id)
@@ -28,4 +29,4 @@ module API =
         let ts = temp.Timestamp
         printfn "%s %f" (ts.ToString("yyyy-MM-dd HH:mm")) temp.Temperature
 
-    let get_temps = Array.map get_temp
+    let get_temps sensors = sensors |> Seq.map get_temp |> Seq.toArray

@@ -16,7 +16,7 @@ open SaunApp.Style
 module App =
     type Model =
         { Temperatures: API.Temperature.Root []
-          Sensors: string [] }
+          Sensors: Map<string, string> }
 
     type Msg =
         | GetTemps
@@ -52,7 +52,12 @@ module App =
     let update msg model =
         match msg with
         | GetTemps ->
-            { model with Temperatures = model.Sensors |> API.get_temps }, []
+            { model with
+                  Temperatures =
+                      model.Sensors
+                      |> Map.toSeq
+                      |> Seq.map fst
+                      |> API.get_temps }, []
         | Reset -> init ()
 
     let view (model: Model) dispatch =
