@@ -74,18 +74,21 @@ module App =
                     (title = "SaunaApp",
                      content =
                          View.StackLayout
-                             (padding = Thickness 20.0, verticalOptions = LayoutOptions.StartAndExpand,
-
+                             (padding = Thickness 20.0,
+                              verticalOptions = LayoutOptions.FillAndExpand,
                               children =
                                   [ for t in model.Temperatures do
                                       yield View.Label
-                                                (text = sensorname_text model t, fontFamily = "Trebuchet",
+                                                (text = sensorname_text model t,
+                                                 fontFamily = textFont,
                                                  textColor = Colors.PrimaryD)
                                       yield View.Label
-                                                (text = temperature_text t, fontSize = FontSize(32.0),
-                                                 fontFamily = "Trebuchet") ]
+                                                (text = temperature_text t,
+                                                 fontSize = FontSize(32.0),
+                                                 fontFamily = textFont) ]
                                   @ [ Design.materialButton Icon.Refresh Colors.Secondary Colors.Text
-                                          (fun () -> dispatch GetTemps) ])) ], barBackgroundColor = Colors.Primary,
+                                          (fun () -> dispatch GetTemps) ])) ],
+             barBackgroundColor = Colors.Primary,
              barTextColor = Colors.Text)
 
     // Note, this declaration is needed if you enable LiveUpdate

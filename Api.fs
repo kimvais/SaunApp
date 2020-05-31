@@ -3,8 +3,8 @@
 open FSharp.Data
 
 module API =
-    // let URL = "https://thermo.77.fi"
-    let URL = "http://127.0.0.1:8000"
+    let URL = "https://thermo.77.fi"
+    // let URL = "http://127.0.0.1:8000"
 
     type Temperature = JsonProvider<"""
     {
